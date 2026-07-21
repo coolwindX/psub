@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Subconverter · 订阅转换器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0d13;
+    --bg-grid: rgba(255,255,255,0.025);
+    --surface: #10141d;
+    --surface-2: #161c29;
+    --border: #232b3d;
+    --border-soft: #1a2130;
+    --text: #e7ebf3;
+    --text-dim: #8b93a7;
+    --text-faint: #545e73;
+    --accent: #4fd8c4;
+    --accent-soft: rgba(79,216,196,0.1);
+    --accent-strong: #2dbba6;
+    --danger: #ef6b6b;
+    --danger-soft: rgba(239,107,107,0.1);
+    --amber: #f2b84b;
+    --radius: 10px;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(79,216,196,0.07), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(79,216,196,0.04), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.5;
+    min-height:100vh;
+  }
+  ::selection{ background:var(--accent); color:#08110f; }
+  a{ color:var(--accent); }
+
+  .wrap{ max-width:820px; margin:0 auto; padding:56px 24px 90px; }
+
+  /* ---------- Header ---------- */
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:56px; gap:16px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:600; font-size:15px; letter-spacing:0.02em; }
+  .brand-mark{
+    width:26px; height:26px; border-radius:7px;
+    background:linear-gradient(135deg, var(--accent), #1f8b7d);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:12px; font-weight:600; color:#062420;
+    flex-shrink:0;
+  }
+  .mode-switch{
+    display:flex; background:var(--surface); border:1px solid var(--border);
+    border-radius:999px; padding:3px; font-size:13px; font-family:var(--mono);
+  }
+  .mode-switch button{
+    border:none; background:transparent; color:var(--text-dim);
+    padding:7px 16px; border-radius:999px; cursor:pointer; font-family:var(--mono);
+    font-size:12.5px; transition:all .2s ease;
+  }
+  .mode-switch button.active{ background:var(--accent-soft); color:var(--accent); }
+
+  .hero{ margin-bottom:52px; }
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; color:var(--accent);
+    letter-spacing:0.12em; text-transform:uppercase; margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--accent); }
+  h1{
+    font-family:var(--display); font-size:clamp(28px,4vw,38px); font-weight:600;
+    line-height:1.2; margin:0 0 14px; letter-spacing:-0.01em;
+  }
+  .hero p{ color:var(--text-dim); font-size:15px; max-width:520px; margin:0; }
+
+  /* ---------- Signature pipeline ---------- */
+  .pipeline{
+    margin-top:32px; display:flex; align-items:center; gap:0;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 22px; overflow-x:auto;
+  }
+  .pipe-node{ display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; min-width:84px; }
+  .pipe-dot{
+    width:34px; height:34px; border-radius:9px; background:var(--surface-2);
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:11px; color:var(--text-faint); transition:all .3s ease;
+  }
+  .pipe-node.on .pipe-dot{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 3px rgba(79,216,196,0.08); }
+  .pipe-label{ font-size:11px; color:var(--text-faint); font-family:var(--mono); white-space:nowrap; }
+  .pipe-node.on .pipe-label{ color:var(--text-dim); }
+  .pipe-line{ flex:1; height:1px; min-width:36px; position:relative; background:repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px); }
+  .pipe-line.on{ background:repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px); }
+  .pipe-line.on::after{
+    content:''; position:absolute; top:-1.5px; left:0; width:8px; height:4px; border-radius:2px;
+    background:var(--accent); box-shadow:0 0 8px var(--accent);
+    animation:flow 1.6s linear infinite;
+  }
+  @keyframes flow{ from{ left:-8px; } to{ left:100%; } }
+
+  /* ---------- Steps / cards ---------- */
+  .step{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:26px 26px 28px; margin-top:18px;
+  }
+  .step-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:18px; }
+  .step-num{ font-family:var(--mono); font-size:12px; color:var(--accent); }
+  .step-title{ font-family:var(--display); font-size:16px; font-weight:600; }
+  .step-hint{ margin-left:auto; font-size:12.5px; color:var(--text-faint); }
+
+  textarea, input[type=text]{
+    width:100%; background:var(--surface-2); border:1px solid var(--border-soft);
+    border-radius:8px; color:var(--text); font-family:var(--mono); font-size:13px;
+    padding:13px 14px; resize:vertical; outline:none; transition:border-color .15s ease;
+  }
+  textarea::placeholder, input::placeholder{ color:var(--text-faint); font-family:var(--body); }
+  textarea:focus, input:focus{ border-color:var(--accent); }
+  textarea{ min-height:96px; line-height:1.6; }
+
+  .badges{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; min-height:26px; }
+  .badge{
+    font-family:var(--mono); font-size:11.5px; padding:4px 10px; border-radius:999px;
+    background:var(--surface-2); border:1px solid var(--border-soft); color:var(--text-dim);
+  }
+  .badge.good{ color:var(--accent); border-color:rgba(79,216,196,0.3); background:var(--accent-soft); }
+  .badge.warn{ color:var(--amber); border-color:rgba(242,184,75,0.3); background:rgba(242,184,75,0.08); }
+
+  .chip-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(108px,1fr)); gap:8px; }
+  .chip{
+    border:1px solid var(--border-soft); background:var(--surface-2); color:var(--text-dim);
+    border-radius:8px; padding:11px 10px; text-align:center; cursor:pointer;
+    font-size:13px; font-weight:500; transition:all .15s ease; user-select:none;
+  }
+  .chip:hover{ border-color:var(--text-faint); color:var(--text); }
+  .chip.active{ border-color:var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:600; }
+
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .field{ margin-top:16px; }
+  .field label{ display:block; font-size:12.5px; color:var(--text-dim); margin-bottom:7px; }
+  .field-note{ font-size:11.5px; color:var(--text-faint); margin-top:6px; }
+
+  button.btn{
+    font-family:var(--body); font-weight:600; font-size:13.5px; border-radius:8px;
+    padding:12px 20px; cursor:pointer; border:1px solid transparent; transition:all .15s ease;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-primary{ background:var(--accent); color:#062420; }
+  .btn-primary:hover{ background:var(--accent-strong); }
+  .btn-primary:disabled{ background:var(--surface-2); color:var(--text-faint); cursor:not-allowed; border-color:var(--border-soft); }
+  .btn-ghost{ background:transparent; border-color:var(--border); color:var(--text-dim); }
+  .btn-ghost:hover{ border-color:var(--text-faint); color:var(--text); }
+  .btn-sm{ padding:8px 14px; font-size:12.5px; }
+
+  .result-box{ margin-top:16px; position:relative; }
+  .result-box textarea{ min-height:130px; padding-right:14px; }
+  .result-actions{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .empty-note{ color:var(--text-faint); font-size:12.5px; font-family:var(--mono); padding:14px 2px; }
+
+  .divider{ display:flex; align-items:center; gap:12px; margin:30px 0 6px; color:var(--text-faint); font-size:11px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; }
+  .divider::before,.divider::after{ content:''; flex:1; height:1px; background:var(--border); }
+
+  .advanced{ display:none; }
+  .advanced.show{ display:block; }
+
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translate(-50%, 20px);
+    background:var(--surface-2); border:1px solid var(--accent); color:var(--text);
+    padding:11px 20px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none;
+    transition:all .25s ease; font-family:var(--mono);
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); }
+
+  footer{ margin-top:60px; text-align:center; color:var(--text-faint); font-size:12px; }
+  footer a{ color:var(--text-faint); text-decoration:underline; }
+
+  @media (max-width:560px){
+    .wrap{ padding:36px 16px 70px; }
+    .step{ padding:20px; }
+    .pipeline{ padding:16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">SC</span>
+      Subconverter
+    </div>
+    <div class="mode-switch">
+      <button id="modeBasic" class="active">基础模式</button>
+      <button id="modeAdvanced">进阶模式</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="eyebrow">Link Conversion</div>
+    <h1>把一串订阅链接<br/>变成客户端能读懂的配置</h1>
+    <p>粘贴订阅或节点链接，选择目标客户端，由 subconverter 后端完成实际转换，前端只负责生成请求链接。</p>
+
+    <div class="pipeline">
+      <div class="pipe-node on" id="pnInput"><div class="pipe-dot">1</div><div class="pipe-label">订阅链接</div></div>
+      <div class="pipe-line" id="plA"></div>
+      <div class="pipe-node" id="pnClient"><div class="pipe-dot">2</div><div class="pipe-label">目标客户端</div></div>
+      <div class="pipe-line" id="plB"></div>
+      <div class="pipe-node" id="pnBackend"><div class="pipe-dot">3</div><div class="pipe-label">后端转换</div></div>
+      <div class="pipe-line" id="plC"></div>
+      <div class="pipe-node" id="pnOutput"><div class="pipe-dot">4</div><div class="pipe-label">订阅链接</div></div>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="step-head">
+      <span class="step-num">01</span>
+      <span class="step-title">订阅链接</span>
+      <span class="step-hint">支持多行 / 用 | 分隔</span>
+    </div>
+    <textarea id="linkInput" placeholder="订阅链接，或 ss:// vmess:// trojan:// 等节点链接&#10;支持多个，每行一个，或用 | 分隔"></textarea>
+    <div class="badges" id="badges"></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="step-head">
+      <span class="step-num">02</span>
+      <span class="step-title">目标客户端</span>
+    </div>
+    <div class="chip-grid" id="clientGrid"></div>
+  </div>
+
+  <!-- Step 3: backend -->
+  <div class="step">
+    <div class="step-head">
+      <span class="step-num">03</span>
+      <span class="step-title">后端地址</span>
+      <span class="step-hint">实际转换由该后端完成</span>
+    </div>
+    <input type="text" id="backendUrl" value="http://127.0.0.1:25500/sub?" />
+    <div class="field-note">默认使用本机 25500 端口的 subconverter 服务；也可以换成你自建或信任的公共后端地址。</div>
+  </div>
+
+  <!-- Advanced panel -->
+  <div class="advanced" id="advancedPanel">
+    <div class="divider">进阶设置</div>
+    <div class="step">
+      <div class="field">
+        <label>远程规则配置 URL（选填）</label>
+        <input type="text" id="remoteConfig" placeholder="外部 ini 配置地址" />
+        <div class="field-note"><a href="https://raw.githubusercontent.com/tindy2013/subconverter/master/base/config/example_external_config.ini" target="_blank" rel="noopener">查看参考配置格式 →</a></div>
+      </div>
+      <div class="field">
+        <label>解析已有的 Subconverter 链接</label>
+        <div class="row">
+          <input type="text" id="parseLinkInput" placeholder="粘贴完整的 /sub?target=...&url=... 链接" style="flex:1;" />
+          <button class="btn btn-ghost btn-sm" id="parseLinkBtn">解析并填入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="step-head">
+      <span class="step-num">04</span>
+      <span class="step-title">生成订阅链接</span>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" id="generateBtn">生成订阅链接</button>
+      <button class="btn btn-ghost" id="clearBtn">清空</button>
+    </div>
+    <div class="result-box" id="resultBox">
+      <div class="empty-note">— 还没有生成结果，填好上面几步后点击「生成订阅链接」—</div>
+    </div>
+  </div>
+
+  <footer>
+    基于 <a href="https://github.com/tindy2013/subconverter" target="_blank" rel="noopener">tindy2013/subconverter</a> 的界面重设计版本 · 实际转换请求发送给你配置的后端
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const CLIENTS = [
+    {id:'clash', label:'Clash'},
+    {id:'clashr', label:'ClashR'},
+    {id:'base64', label:'Base64'},
+    {id:'v2ray', label:'V2Ray'},
+    {id:'ss', label:'SS'},
+    {id:'ssr', label:'SSR'},
+    {id:'ssd', label:'SSD'},
+    {id:'surge2', label:'Surge2'},
+    {id:'surge3', label:'Surge3'},
+    {id:'surge4', label:'Surge4'},
+    {id:'quantumult', label:'Quantumult'},
+    {id:'quantumultx', label:'QuantumultX'},
+    {id:'surfboard', label:'Surfboard'},
+    {id:'loon', label:'Loon'},
+    {id:'ssandroid', label:'SSAndroid'},
+  ];
+  let selectedClient = 'clash';
+
+  const grid = document.getElementById('clientGrid');
+  CLIENTS.forEach(c=>{
+    const el = document.createElement('div');
+    el.className = 'chip' + (c.id===selectedClient ? ' active':'');
+    el.textContent = c.label;
+    el.dataset.id = c.id;
+    el.addEventListener('click', ()=>{
+      selectedClient = c.id;
+      [...grid.children].forEach(ch=>ch.classList.remove('active'));
+      el.classList.add('active');
+      renderBadges();
+    });
+    grid.appendChild(el);
+  });
+
+  // ---------- mode switch ----------
+  const modeBasic = document.getElementById('modeBasic');
+  const modeAdvanced = document.getElementById('modeAdvanced');
+  const advPanel = document.getElementById('advancedPanel');
+  modeBasic.addEventListener('click', ()=>{
+    modeBasic.classList.add('active'); modeAdvanced.classList.remove('active');
+    advPanel.classList.remove('show');
+  });
+  modeAdvanced.addEventListener('click', ()=>{
+    modeAdvanced.classList.add('active'); modeBasic.classList.remove('active');
+    advPanel.classList.add('show');
+  });
+
+  // ---------- pipeline visual ----------
+  function setPipeline(inputOk, clientOk, backendOk, outputOk){
+    document.getElementById('pnInput').classList.toggle('on', inputOk);
+    document.getElementById('pnClient').classList.toggle('on', clientOk);
+    document.getElementById('pnBackend').classList.toggle('on', backendOk);
+    document.getElementById('pnOutput').classList.toggle('on', outputOk);
+    document.getElementById('plA').classList.toggle('on', inputOk && clientOk);
+    document.getElementById('plB').classList.toggle('on', clientOk && backendOk);
+    document.getElementById('plC').classList.toggle('on', backendOk && outputOk);
+  }
+
+  // ---------- link input: just split, no protocol parsing ----------
+  // 实际的 ss/vmess/trojan/... 协议解析与配置生成完全由后端 subconverter 完成，
+  // 这里只负责把输入拆成多条链接、统计条数，用于界面上的提示徽标。
+  function splitLinks(raw){
+    return (raw||'').split(/\r?\n|\|/).map(s=>s.trim()).filter(Boolean);
+  }
+
+  const linkInput = document.getElementById('linkInput');
+  const badgesEl = document.getElementById('badges');
+  function renderBadges(){
+    const links = splitLinks(linkInput.value);
+    badgesEl.innerHTML = '';
+    const hasClient = document.querySelector('.chip.active') != null;
+    setPipeline(links.length>0, links.length>0 && hasClient, false, false);
+    if(!links.length) return;
+    const b = document.createElement('span');
+    b.className = 'badge good';
+    b.textContent = `已输入 ${links.length} 条链接`;
+    badgesEl.appendChild(b);
+  }
+  linkInput.addEventListener('input', renderBadges);
+
+  // ---------- generate: 只拼接请求 URL，交给后端转换 ----------
+  const resultBox = document.getElementById('resultBox');
+  const backendInput = document.getElementById('backendUrl');
+  const remoteConfigInput = document.getElementById('remoteConfig');
+
+  function showResult(url){
+    resultBox.innerHTML = '';
+    const ta = document.createElement('textarea');
+    ta.readOnly = true;
+    ta.value = url;
+    ta.style.minHeight = '60px';
+    resultBox.appendChild(ta);
+
+    const actions = document.createElement('div');
+    actions.className = 'result-actions';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn btn-ghost btn-sm';
+    copyBtn.textContent = '复制';
+    copyBtn.addEventListener('click', ()=>{
+      navigator.clipboard.writeText(url).then(()=>toast('已复制到剪贴板'));
+    });
+    actions.appendChild(copyBtn);
+
+    const openBtn = document.createElement('button');
+    openBtn.className = 'btn btn-ghost btn-sm';
+    openBtn.textContent = '在新标签页打开';
+    openBtn.addEventListener('click', ()=> window.open(url, '_blank'));
+    actions.appendChild(openBtn);
+
+    const importBtn = document.createElement('button');
+    importBtn.className = 'btn btn-primary btn-sm';
+    importBtn.textContent = '一键导入 Clash';
+    importBtn.addEventListener('click', ()=>{
+      window.location.href = 'clash://install-config?url=' + encodeURIComponent(url);
+    });
+    actions.appendChild(importBtn);
+
+    resultBox.appendChild(actions);
+    setPipeline(true, true, true, true);
+  }
+
+  function showEmptyMessage(msg){
+    resultBox.innerHTML = `<div class="empty-note">${msg}</div>`;
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', ()=>{
+    const raw = linkInput.value.trim();
+    if(!raw){ showEmptyMessage('— 请先在第一步粘贴订阅链接 —'); return; }
+
+    const backend = backendInput.value.trim();
+    if(!backend){ showEmptyMessage('— 请先填写第三步的后端地址 —'); return; }
+
+    const sep = backend.includes('?') ? (backend.endsWith('?') || backend.endsWith('&') ? '' : '&') : '?';
+    let url = `${backend}${sep}target=${encodeURIComponent(selectedClient)}&url=${encodeURIComponent(raw)}`;
+    const remoteConfig = remoteConfigInput.value.trim();
+    if(remoteConfig) url += `&config=${encodeURIComponent(remoteConfig)}`;
+
+    showResult(url);
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    linkInput.value = '';
+    renderBadges();
+    showEmptyMessage('— 还没有生成结果，填好上面几步后点击「生成订阅链接」—');
+  });
+
+  // ---------- parse existing subconverter link ----------
+  document.getElementById('parseLinkBtn').addEventListener('click', ()=>{
+    const raw = document.getElementById('parseLinkInput').value.trim();
+    if(!raw){ return; }
+    try{
+      const u = new URL(raw);
+      const target = u.searchParams.get('target');
+      const url = u.searchParams.get('url');
+      const config = u.searchParams.get('config');
+      if(url) linkInput.value = url;
+      if(config) remoteConfigInput.value = config;
+      backendInput.value = u.origin + u.pathname + '?';
+      if(target){
+        const chip = [...grid.children].find(c=>c.dataset.id===target);
+        if(chip){
+          selectedClient = target;
+          [...grid.children].forEach(ch=>ch.classList.remove('active'));
+          chip.classList.add('active');
+        }
+      }
+      renderBadges();
+      toast('已解析并填入表单');
+    }catch(e){
+      toast('链接格式无法解析');
+    }
+  });
+
+  // ---------- toast ----------
+  let toastTimer;
+  function toast(msg){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
+  }
+
+  renderBadges();
+})();
+</script>
+
+</body>
+</html>
