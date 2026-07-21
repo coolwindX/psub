@@ -245,8 +245,8 @@
       <span class="step-title">后端地址</span>
       <span class="step-hint">实际转换由该后端完成</span>
     </div>
-    <input type="text" id="backendUrl" value="http://127.0.0.1:25500/sub?" />
-    <div class="field-note">默认使用本机 25500 端口的 subconverter 服务；也可以换成你自建或信任的公共后端地址。</div>
+    <input type="text" id="backendUrl" placeholder="自动匹配当前站点地址" />
+    <div class="field-note">已自动匹配当前站点的协议（http/https）与域名，因为前后端部署在同一服务器；如后端路径不同可自行修改。</div>
   </div>
 
   <!-- Advanced panel -->
@@ -376,6 +376,7 @@
   // ---------- generate: 只拼接请求 URL，交给后端转换 ----------
   const resultBox = document.getElementById('resultBox');
   const backendInput = document.getElementById('backendUrl');
+  backendInput.value = `${window.location.protocol}//${window.location.host}/sub?`;
   const remoteConfigInput = document.getElementById('remoteConfig');
 
   function showResult(url){
